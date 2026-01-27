@@ -1,0 +1,18 @@
+# Grafana Dashboard Provisioning
+# ===============================
+# Auto-load dashboards from file
+
+apiVersion: 1
+
+providers:
+  - name: 'Loan Approval Dashboards'
+    orgId: 1
+    folder: 'Loan Approval'
+    folderUid: 'loan-approval'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: true

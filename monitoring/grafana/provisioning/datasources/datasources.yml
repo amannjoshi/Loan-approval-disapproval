@@ -1,0 +1,41 @@
+# Grafana Datasource Provisioning
+# ================================
+# Auto-configure Prometheus as data source
+
+apiVersion: 1
+
+datasources:
+  # Prometheus - Primary metrics source
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      httpMethod: POST
+      manageAlerts: true
+      prometheusType: Prometheus
+      prometheusVersion: "2.40.0"
+      timeInterval: "15s"
+      cacheLevel: "High"
+      incrementalQuerying: true
+      incrementalQueryOverlapWindow: "10m"
+    version: 1
+
+  # PostgreSQL - Direct database queries
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: loan_approval_db
+    user: postgres
+    secureJsonData:
+      password: "${POSTGRES_PASSWORD}"
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 5
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+    editable: false
+    version: 1

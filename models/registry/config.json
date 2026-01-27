@@ -1,0 +1,16 @@
+{
+  "production_model_id": null,
+  "staging_model_id": null,
+  "ab_test_config": {
+    "enabled": false,
+    "model_a": null,
+    "model_b": null,
+    "traffic_split": 0.5
+  },
+  "auto_promote": false,
+  "promotion_threshold": {
+    "min_accuracy": 0.85,
+    "min_roc_auc": 0.8,
+    "min_samples": 1000
+  }
+}

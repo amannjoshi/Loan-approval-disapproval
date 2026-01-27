@@ -1,0 +1,212 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Loan Approval API Overview Dashboard",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "id": 1,
+      "panels": [],
+      "title": "🚀 Service Overview",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [
+            {"options": {"0": {"color": "red", "index": 0, "text": "DOWN"}}, "type": "value"},
+            {"options": {"1": {"color": "green", "index": 1, "text": "UP"}}, "type": "value"}
+          ],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+        }
+      },
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 1},
+      "id": 2,
+      "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "title": "API Status",
+      "type": "stat",
+      "targets": [{"expr": "up{job=\"loan-api\"}", "refId": "A"}]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "unit": "reqps"
+        }
+      },
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 1},
+      "id": 3,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "title": "Request Rate",
+      "type": "stat",
+      "targets": [{"expr": "sum(rate(loan_api_requests_total[5m]))", "refId": "A"}]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "unit": "s",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.5}, {"color": "red", "value": 1}]}
+        }
+      },
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 1},
+      "id": 4,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["mean"], "fields": "", "values": false}, "textMode": "auto"},
+      "title": "Avg Response Time",
+      "type": "stat",
+      "targets": [{"expr": "avg(loan_api_request_duration_seconds)", "refId": "A"}]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "unit": "percentunit",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.01}, {"color": "red", "value": 0.05}]}
+        }
+      },
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 1},
+      "id": 5,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "title": "Error Rate",
+      "type": "stat",
+      "targets": [{"expr": "sum(rate(loan_api_requests_by_status{status=~\"5..\"}[5m])) / sum(rate(loan_api_requests_total[5m]))", "refId": "A"}]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "unit": "s",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
+        }
+      },
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 1},
+      "id": 6,
+      "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "title": "Uptime",
+      "type": "stat",
+      "targets": [{"expr": "loan_api_uptime_seconds", "refId": "A"}]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5},
+      "id": 10,
+      "panels": [],
+      "title": "📊 Traffic & Performance",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "none", "hideFrom": {"legend": false, "tooltip": false, "viz": false}, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "scaleDistribution": {"type": "linear"}, "showPoints": "never", "spanNulls": false, "stacking": {"group": "A", "mode": "none"}, "thresholdsStyle": {"mode": "off"}},
+          "unit": "reqps"
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+      "id": 11,
+      "options": {"legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "title": "Request Rate Over Time",
+      "type": "timeseries",
+      "targets": [
+        {"expr": "sum(rate(loan_api_requests_total[1m]))", "legendFormat": "Total", "refId": "A"},
+        {"expr": "sum(rate(loan_api_requests_by_status{status=~\"2..\"}[1m]))", "legendFormat": "2xx Success", "refId": "B"},
+        {"expr": "sum(rate(loan_api_requests_by_status{status=~\"4..\"}[1m]))", "legendFormat": "4xx Client Error", "refId": "C"},
+        {"expr": "sum(rate(loan_api_requests_by_status{status=~\"5..\"}[1m]))", "legendFormat": "5xx Server Error", "refId": "D"}
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "none", "hideFrom": {"legend": false, "tooltip": false, "viz": false}, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "scaleDistribution": {"type": "linear"}, "showPoints": "never", "spanNulls": false, "stacking": {"group": "A", "mode": "none"}, "thresholdsStyle": {"mode": "line+area"}},
+          "unit": "s",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.5}, {"color": "red", "value": 1}]}
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+      "id": 12,
+      "options": {"legend": {"calcs": ["mean", "max", "last"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "title": "Response Time Percentiles",
+      "type": "timeseries",
+      "targets": [
+        {"expr": "histogram_quantile(0.50, sum(rate(loan_api_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p50", "refId": "A"},
+        {"expr": "histogram_quantile(0.90, sum(rate(loan_api_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p90", "refId": "B"},
+        {"expr": "histogram_quantile(0.99, sum(rate(loan_api_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p99", "refId": "C"}
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 14},
+      "id": 20,
+      "panels": [],
+      "title": "💻 System Resources",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "continuous-BlYlRd"},
+          "custom": {"axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 30, "gradientMode": "scheme", "hideFrom": {"legend": false, "tooltip": false, "viz": false}, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "scaleDistribution": {"type": "linear"}, "showPoints": "never", "spanNulls": false, "stacking": {"group": "A", "mode": "none"}, "thresholdsStyle": {"mode": "line"}},
+          "unit": "percent",
+          "max": 100,
+          "min": 0,
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 70}, {"color": "red", "value": 90}]}
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 15},
+      "id": 21,
+      "options": {"legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "title": "CPU Usage",
+      "type": "timeseries",
+      "targets": [{"expr": "loan_api_cpu_percent", "legendFormat": "{{instance}}", "refId": "A"}]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "continuous-BlYlRd"},
+          "custom": {"axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 30, "gradientMode": "scheme", "hideFrom": {"legend": false, "tooltip": false, "viz": false}, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "scaleDistribution": {"type": "linear"}, "showPoints": "never", "spanNulls": false, "stacking": {"group": "A", "mode": "none"}, "thresholdsStyle": {"mode": "line"}},
+          "unit": "percent",
+          "max": 100,
+          "min": 0,
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 70}, {"color": "red", "value": 90}]}
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 15},
+      "id": 22,
+      "options": {"legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "title": "Memory Usage",
+      "type": "timeseries",
+      "targets": [{"expr": "loan_api_memory_percent", "legendFormat": "{{instance}}", "refId": "A"}]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["loan-approval", "api", "overview"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Loan Approval API - Overview",
+  "uid": "loan-api-overview",
+  "version": 1,
+  "weekStart": ""
+}
