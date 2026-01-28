@@ -88,6 +88,20 @@ from .anomaly_detection_service import (
     get_anomaly_detection_service
 )
 
+from .privacy_service import (
+    PrivacyService,
+    PrivacyLevel,
+    DataCategory,
+    PrivacyConfig,
+    get_privacy_service,
+    configure_privacy,
+    mask_for_log,
+    mask_for_display,
+    mask_applicant,
+    is_sensitive_field,
+    privacy_protected
+)
+
 __all__ = [
     # Loan Service (Legacy)
     'LoanApplicationService',
@@ -155,5 +169,18 @@ __all__ = [
     'AlertStatus',
     'ApplicationEvent',
     'AnomalyMetrics',
-    'get_anomaly_detection_service'
+    'get_anomaly_detection_service',
+    
+    # Privacy Service
+    'PrivacyService',
+    'PrivacyLevel',
+    'DataCategory',
+    'PrivacyConfig',
+    'get_privacy_service',
+    'configure_privacy',
+    'mask_for_log',
+    'mask_for_display',
+    'mask_applicant',
+    'is_sensitive_field',
+    'privacy_protected'
 ]

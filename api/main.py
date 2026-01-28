@@ -362,6 +362,14 @@ def setup_routes(app: FastAPI):
             tags=["Alerts & Anomaly Detection"]
         )
         
+        # Import privacy router
+        from .routes import privacy_router
+        app.include_router(
+            privacy_router,
+            prefix=f"{settings.api_prefix}/privacy",
+            tags=["Privacy & Data Masking"]
+        )
+        
     except ImportError as e:
         logger.warning(f"Some routes not available: {e}")
 
