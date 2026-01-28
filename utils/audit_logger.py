@@ -9,9 +9,10 @@ Features:
 - Decision tracking
 - Compliance reporting
 - Performance monitoring
+- PII Redaction (NO personal data in logs)
 
 Author: Loan Analytics Team
-Version: 3.0.0
+Version: 3.1.0
 Last Updated: January 2026
 """
 
@@ -27,6 +28,13 @@ from pathlib import Path
 import threading
 from enum import Enum
 import uuid
+
+# Import PII redactor for secure logging
+try:
+    from utils.pii_redactor import PIIRedactor, redact_pii, MaskingStrategy
+    PII_REDACTION_AVAILABLE = True
+except ImportError:
+    PII_REDACTION_AVAILABLE = False
 
 
 class AuditEventType(Enum):
@@ -169,14 +177,19 @@ class AuditLogger:
         
         # Session tracking
         self.session_id = str(uuid.uuid4())[:8]
-        self.model_version = "3.0.0"
+        self.model_version = "3.1.0"
+        
+        # Initialize PII redactor for secure logging
+        self.pii_redactor = PIIRedactor() if PII_REDACTION_AVAILABLE else None
+        self.pii_redaction_enabled = True
         
         self._initialized = True
         
         # Log initialization
         self.log_event(AuditEventType.CONFIG_CHANGED, {
             'action': 'audit_logger_initialized',
-            'session_id': self.session_id
+            'session_id': self.session_id,
+            'pii_redaction_enabled': self.pii_redaction_enabled
         })
     
     def _setup_logging(self):
@@ -381,10 +394,18 @@ class AuditLogger:
             self.logger.info(f"Event logged: {event.event_type} - {event.event_id}")
     
     def _sanitize_features(self, data: Dict) -> Dict:
-        """Remove/mask sensitive features for logging."""
+        """
+        Remove/mask sensitive features for logging.
+        Uses PII redactor when available for comprehensive protection.
+        """
+        # If PII redactor is available, use it for comprehensive redaction
+        if self.pii_redactor and self.pii_redaction_enabled:
+            return self.pii_redactor.redact_dict(data)
+        
+        # Fallback: manual sanitization
         sanitized = {}
         
-        # Features safe to log
+        # Features safe to log (non-PII)
         safe_features = [
             'age', 'gender', 'education', 'marital_status',
             'employment_type', 'industry', 'years_at_current_job',
@@ -420,22 +441,54 @@ class AuditLogger:
             else:
                 sanitized['loan_range'] = '>10L'
         
+        # Explicitly exclude PII fields
+        pii_fields_to_exclude = [
+            'applicant_name', 'name', 'first_name', 'last_name',
+            'email', 'phone', 'mobile', 'address', 'city', 'state',
+            'aadhaar', 'pan', 'passport', 'account_number',
+            'ip_address', 'user_agent'
+        ]
+        
+        for pii_field in pii_fields_to_exclude:
+            if pii_field in sanitized:
+                del sanitized[pii_field]
+        
         return sanitized
     
     def _mask_name(self, name: str) -> str:
-        """Mask name for privacy (keep first and last letter)."""
-        if not name or len(name) < 3:
-            return "***"
+        """
+        Mask name for privacy using PII redactor when available.
+        Keeps first letter only for compliance tracking.
+        """
+        if not name or len(name) < 1:
+            return "[REDACTED]"
         
+        # Use PII redactor if available
+        if self.pii_redactor and self.pii_redaction_enabled:
+            return self.pii_redactor.mask_value(name, 'name', MaskingStrategy.PARTIAL)
+        
+        # Fallback: manual masking (first letter + asterisks)
         parts = name.split()
         masked_parts = []
         for part in parts:
-            if len(part) > 2:
-                masked_parts.append(part[0] + '*' * (len(part) - 2) + part[-1])
+            if len(part) > 0:
+                masked_parts.append(part[0] + '*' * (len(part) - 1))
             else:
-                masked_parts.append('**')
+                masked_parts.append('*')
         
         return ' '.join(masked_parts)
+    
+    def _redact_error_message(self, error_msg: str) -> str:
+        """Redact any PII that might be in error messages."""
+        if self.pii_redactor and self.pii_redaction_enabled:
+            return self.pii_redactor.redact_text(error_msg)
+        return error_msg
+    
+    def _redact_stack_trace(self, stack_trace: str) -> str:
+        """Redact any PII from stack traces."""
+        if self.pii_redactor and self.pii_redaction_enabled:
+            return self.pii_redactor.redact_text(stack_trace)
+        return stack_trace
     
     def get_session_summary(self) -> Dict:
         """Get summary of current session."""

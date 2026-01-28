@@ -105,18 +105,62 @@ class InputValidator:
         'years_with_bank': {'min': 0, 'max': 50, 'type': (int, float)},
     }
     
-    # SQL injection / XSS patterns to block
+    # SQL injection / XSS patterns to block - Comprehensive security patterns
     DANGEROUS_PATTERNS = [
+        # XSS Patterns
         r'<script[^>]*>',
+        r'</script>',
         r'javascript:',
+        r'vbscript:',
         r'on\w+\s*=',
+        r'<iframe[^>]*>',
+        r'<object[^>]*>',
+        r'<embed[^>]*>',
+        r'<svg[^>]*onload',
+        r'<img[^>]*onerror',
+        r'data:text/html',
+        r'expression\s*\(',
+        
+        # SQL Injection Patterns
         r'union\s+select',
+        r'union\s+all\s+select',
         r'drop\s+table',
+        r'drop\s+database',
         r'insert\s+into',
         r'delete\s+from',
-        r'--',
+        r'update\s+\w+\s+set',
+        r'truncate\s+table',
+        r'alter\s+table',
+        r'exec\s*\(',
+        r'execute\s*\(',
+        r'xp_cmdshell',
+        r'sp_executesql',
+        r"'\s*or\s+'?1'?\s*=\s*'?1",
+        r"'\s*or\s+''='",
+        r';\s*--',
         r'/\*.*\*/',
-        r';\s*$'
+        r';\s*$',
+        r'waitfor\s+delay',
+        r'benchmark\s*\(',
+        r'sleep\s*\(',
+        
+        # Path Traversal
+        r'\.\./\.\.',
+        r'\.\.\\\.\.\\',
+        r'%2e%2e%2f',
+        r'%252e%252e%252f',
+        
+        # Command Injection
+        r';\s*cat\s+',
+        r';\s*ls\s+',
+        r'\|\s*cat\s+',
+        r'`.*`',
+        r'\$\(.*\)',
+        
+        # LDAP Injection
+        r'\)\s*\(\|',
+        r'\)\s*\(&',
+        r'\*\)\s*\(',
     ]
     
     def __init__(self):

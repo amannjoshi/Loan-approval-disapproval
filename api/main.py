@@ -29,6 +29,19 @@ try:
 except ImportError:
     MIDDLEWARE_AVAILABLE = False
 
+# Import security middleware
+try:
+    from middleware.security import (
+        SecurityHeadersMiddleware,
+        HTTPSRedirectMiddleware,
+        SecureLoggingMiddleware,
+        RequestValidationMiddleware,
+        setup_security_middleware
+    )
+    SECURITY_MIDDLEWARE_AVAILABLE = True
+except ImportError:
+    SECURITY_MIDDLEWARE_AVAILABLE = False
+
 settings = get_settings()
 
 # Configure logging
@@ -109,9 +122,9 @@ def create_app() -> FastAPI:
 # =============================================================================
 
 def setup_middleware(app: FastAPI):
-    """Configure application middleware."""
+    """Configure application middleware including security."""
     
-    # CORS
+    # CORS (configure before security middleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -120,7 +133,26 @@ def setup_middleware(app: FastAPI):
         allow_headers=settings.cors_allow_headers,
     )
     
-    # Production middleware (if available)
+    # Security middleware stack (if available)
+    if SECURITY_MIDDLEWARE_AVAILABLE:
+        # Secure logging (innermost - no PII in logs)
+        app.add_middleware(SecureLoggingMiddleware)
+        logger.info("✅ Secure logging middleware enabled (PII redaction active)")
+        
+        # Request validation (SQL injection, XSS protection)
+        app.add_middleware(RequestValidationMiddleware)
+        logger.info("✅ Request validation middleware enabled")
+        
+        # Security headers (HSTS, CSP, X-Frame-Options, etc.)
+        app.add_middleware(SecurityHeadersMiddleware)
+        logger.info("✅ Security headers middleware enabled")
+        
+        # HTTPS redirect (production only)
+        if settings.environment == "production":
+            app.add_middleware(HTTPSRedirectMiddleware)
+            logger.info("✅ HTTPS redirect middleware enabled")
+    
+    # Production middleware (rate limiting)
     if MIDDLEWARE_AVAILABLE and settings.environment == "production":
         # Rate limiting middleware
         app.add_middleware(
