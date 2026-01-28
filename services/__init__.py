@@ -77,6 +77,17 @@ from .soft_reject_service import (
     get_soft_reject_service
 )
 
+from .anomaly_detection_service import (
+    AnomalyDetectionService,
+    Alert,
+    AlertSeverity,
+    AlertType,
+    AlertStatus,
+    ApplicationEvent,
+    AnomalyMetrics,
+    get_anomaly_detection_service
+)
+
 __all__ = [
     # Loan Service (Legacy)
     'LoanApplicationService',
@@ -134,5 +145,15 @@ __all__ = [
     'ImprovementCategory',
     'ImprovementPriority',
     'ImprovementDifficulty',
-    'get_soft_reject_service'
+    'get_soft_reject_service',
+    
+    # Anomaly Detection Service
+    'AnomalyDetectionService',
+    'Alert',
+    'AlertSeverity',
+    'AlertType',
+    'AlertStatus',
+    'ApplicationEvent',
+    'AnomalyMetrics',
+    'get_anomaly_detection_service'
 ]

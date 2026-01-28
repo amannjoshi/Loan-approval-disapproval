@@ -354,6 +354,14 @@ def setup_routes(app: FastAPI):
             tags=["Rejection Feedback & Improvement Suggestions"]
         )
         
+        # Import alerts router
+        from .routes import alerts_router
+        app.include_router(
+            alerts_router,
+            prefix=f"{settings.api_prefix}/alerts",
+            tags=["Alerts & Anomaly Detection"]
+        )
+        
     except ImportError as e:
         logger.warning(f"Some routes not available: {e}")
 

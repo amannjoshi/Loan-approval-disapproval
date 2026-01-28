@@ -10,6 +10,7 @@ from .applications import router as applications_router
 from .admin import router as admin_router
 from .models import router as models_router
 from .rejection_feedback import router as rejection_feedback_router
+from .alerts import router as alerts_router
 
 __all__ = [
     'auth_router',
@@ -17,5 +18,6 @@ __all__ = [
     'applications_router',
     'admin_router',
     'models_router',
-    'rejection_feedback_router'
+    'rejection_feedback_router',
+    'alerts_router'
 ]
