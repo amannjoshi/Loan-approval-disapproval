@@ -1036,23 +1036,27 @@ class DecisionEngine:
         
         for failure in rule_result.blocking_failures:
             if failure.rule_id == "AGE_001":
-                recommendations.append("Reapply when you meet the minimum age requirement")
+                recommendations.append("⏰ Reapply when you meet the minimum age requirement")
             elif failure.rule_id == "INC_001":
-                recommendations.append("Consider increasing income or applying for a smaller loan amount")
+                recommendations.append("💰 Consider increasing income or applying for a smaller loan amount")
             elif failure.rule_id == "KYC_001":
-                recommendations.append("Complete KYC verification and reapply")
+                recommendations.append("📋 Complete KYC verification and reapply")
             elif failure.rule_id == "EMP_001":
-                recommendations.append("Build employment history and reapply after 6 months")
+                recommendations.append("💼 Build employment history and reapply after 6 months")
             elif failure.rule_id == "CIB_001":
-                recommendations.append("Work on improving your credit score before reapplying")
+                recommendations.append("📈 Work on improving your credit score before reapplying")
             elif failure.rule_id == "DTI_001":
-                recommendations.append("Reduce existing debt or increase income before reapplying")
+                recommendations.append("📊 Reduce existing debt or increase income before reapplying")
         
         if ml_result and ml_result.approval_score < 0.3:
-            recommendations.append("Consider applying with a co-applicant")
-            recommendations.append("Provide additional collateral to strengthen your application")
+            recommendations.append("🤝 Consider applying with a co-applicant for combined income strength")
+            recommendations.append("🏠 Provide additional collateral to strengthen your application")
         
-        return recommendations[:5]  # Max 5 recommendations
+        # Add encouraging closer
+        if recommendations:
+            recommendations.append("💪 Remember: This is a temporary setback, not a permanent barrier!")
+        
+        return recommendations[:6]  # Max 6 recommendations
     
     def _generate_approval_recommendations(
         self,

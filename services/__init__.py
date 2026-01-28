@@ -66,6 +66,17 @@ from .rollback_service import (
     get_rollback_service
 )
 
+from .soft_reject_service import (
+    SoftRejectService,
+    ApplicantContext,
+    SoftRejectResponse,
+    ImprovementSuggestion,
+    ImprovementCategory,
+    ImprovementPriority,
+    ImprovementDifficulty,
+    get_soft_reject_service
+)
+
 __all__ = [
     # Loan Service (Legacy)
     'LoanApplicationService',
@@ -113,5 +124,15 @@ __all__ = [
     'DecisionRecord',
     'RollbackRecord',
     'ReExplanationResult',
-    'get_rollback_service'
+    'get_rollback_service',
+    
+    # Soft Reject Service
+    'SoftRejectService',
+    'ApplicantContext',
+    'SoftRejectResponse',
+    'ImprovementSuggestion',
+    'ImprovementCategory',
+    'ImprovementPriority',
+    'ImprovementDifficulty',
+    'get_soft_reject_service'
 ]

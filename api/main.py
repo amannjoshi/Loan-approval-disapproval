@@ -346,6 +346,14 @@ def setup_routes(app: FastAPI):
             tags=["Model Management"]
         )
         
+        # Import rejection feedback router
+        from .routes import rejection_feedback_router
+        app.include_router(
+            rejection_feedback_router,
+            prefix=f"{settings.api_prefix}/rejection",
+            tags=["Rejection Feedback & Improvement Suggestions"]
+        )
+        
     except ImportError as e:
         logger.warning(f"Some routes not available: {e}")
 
