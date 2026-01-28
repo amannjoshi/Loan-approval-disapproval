@@ -37,12 +37,13 @@ class Settings(BaseSettings):
     cors_allow_methods: List[str] = Field(default=["*"], env="CORS_ALLOW_METHODS")
     cors_allow_headers: List[str] = Field(default=["*"], env="CORS_ALLOW_HEADERS")
     
-    # Database
+    # Database (SQLite by default, MySQL optional)
     db_host: str = Field(default="localhost", env="DB_HOST")
-    db_port: int = Field(default=5432, env="DB_PORT")
+    db_port: int = Field(default=3306, env="DB_PORT")
     db_name: str = Field(default="loan_approval", env="DB_NAME")
-    db_user: str = Field(default="postgres", env="DB_USER")
-    db_password: str = Field(default="postgres", env="DB_PASSWORD")
+    db_user: str = Field(default="root", env="DB_USER")
+    db_password: str = Field(default="", env="DB_PASSWORD")
+    use_sqlite: bool = Field(default=True, env="USE_SQLITE")
     db_pool_size: int = Field(default=5, env="DB_POOL_SIZE")
     db_max_overflow: int = Field(default=10, env="DB_MAX_OVERFLOW")
     

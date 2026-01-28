@@ -1,7 +1,7 @@
 """
 Database Connection Manager
 ===========================
-PostgreSQL connection management using SQLAlchemy.
+SQLite connection management using SQLAlchemy.
 
 Supports:
 - Connection pooling
@@ -35,23 +35,32 @@ class DatabaseConfig:
     
     def __init__(self):
         self.host = os.getenv('DB_HOST', 'localhost')
-        self.port = os.getenv('DB_PORT', '5432')
+        self.port = os.getenv('DB_PORT', '3306')
         self.database = os.getenv('DB_NAME', 'loan_approval')
-        self.username = os.getenv('DB_USER', 'postgres')
-        self.password = os.getenv('DB_PASSWORD', 'postgres')
+        self.username = os.getenv('DB_USER', 'root')
+        self.password = os.getenv('DB_PASSWORD', '')
         self.pool_size = int(os.getenv('DB_POOL_SIZE', '5'))
         self.max_overflow = int(os.getenv('DB_MAX_OVERFLOW', '10'))
         self.echo = os.getenv('DB_ECHO', 'false').lower() == 'true'
+        self.use_sqlite = os.getenv('USE_SQLITE', 'true').lower() == 'true'
+        
+        # SQLite database file path
+        import pathlib
+        self.db_path = pathlib.Path(__file__).parent.parent / 'data' / 'loan_approval.db'
     
     @property
     def database_url(self) -> str:
-        """Get PostgreSQL connection URL."""
-        return f"postgresql://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}"
+        """Get database connection URL (SQLite or MySQL)."""
+        if self.use_sqlite:
+            return f"sqlite:///{self.db_path}"
+        return f"mysql+pymysql://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}?charset=utf8mb4"
     
     @property
     def async_database_url(self) -> str:
-        """Get async PostgreSQL connection URL."""
-        return f"postgresql+asyncpg://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}"
+        """Get async database connection URL."""
+        if self.use_sqlite:
+            return f"sqlite+aiosqlite:///{self.db_path}"
+        return f"mysql+aiomysql://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}?charset=utf8mb4"
 
 
 class DatabaseConnection:
@@ -82,15 +91,28 @@ class DatabaseConnection:
     def _create_engine(self):
         """Create SQLAlchemy engine with connection pooling."""
         try:
-            self._engine = create_engine(
-                self.config.database_url,
-                poolclass=QueuePool,
-                pool_size=self.config.pool_size,
-                max_overflow=self.config.max_overflow,
-                pool_pre_ping=True,  # Verify connections before use
-                pool_recycle=3600,   # Recycle connections after 1 hour
-                echo=self.config.echo
-            )
+            # SQLite requires different settings
+            if self.config.use_sqlite:
+                # Ensure directory exists
+                self.config.db_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                self._engine = create_engine(
+                    self.config.database_url,
+                    connect_args={"check_same_thread": False},  # Required for SQLite
+                    echo=self.config.echo
+                )
+                logger.info(f"SQLite database engine created: {self.config.db_path}")
+            else:
+                self._engine = create_engine(
+                    self.config.database_url,
+                    poolclass=QueuePool,
+                    pool_size=self.config.pool_size,
+                    max_overflow=self.config.max_overflow,
+                    pool_pre_ping=True,  # Verify connections before use
+                    pool_recycle=3600,   # Recycle connections after 1 hour
+                    echo=self.config.echo
+                )
+                logger.info(f"Database engine created: {self.config.host}:{self.config.port}/{self.config.database}")
             
             self._session_factory = sessionmaker(
                 bind=self._engine,
@@ -98,8 +120,6 @@ class DatabaseConnection:
                 autoflush=False,
                 expire_on_commit=False
             )
-            
-            logger.info(f"Database engine created: {self.config.host}:{self.config.port}/{self.config.database}")
             
         except Exception as e:
             logger.error(f"Failed to create database engine: {e}")

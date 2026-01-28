@@ -15,7 +15,7 @@ from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
-from database.connection import get_session
+from database.connection import get_db_session
 from database.models import User, UserRole, UserStatus
 from api.auth import decode_token, TokenPayload
 from api.config import get_settings
@@ -36,7 +36,7 @@ def get_db():
     Yields:
         Session: SQLAlchemy session
     """
-    db = get_session()
+    db = get_db_session()
     try:
         yield db
     finally:

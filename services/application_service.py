@@ -98,8 +98,8 @@ class ApplicationService:
     
     # Valid status transitions
     STATUS_TRANSITIONS = {
-        ApplicationStatus.DRAFT: [ApplicationStatus.SUBMITTED, ApplicationStatus.CANCELLED],
-        ApplicationStatus.SUBMITTED: [ApplicationStatus.UNDER_REVIEW, ApplicationStatus.CANCELLED],
+        ApplicationStatus.DRAFT: [ApplicationStatus.PENDING, ApplicationStatus.CANCELLED],
+        ApplicationStatus.PENDING: [ApplicationStatus.UNDER_REVIEW, ApplicationStatus.CANCELLED],
         ApplicationStatus.UNDER_REVIEW: [ApplicationStatus.APPROVED, ApplicationStatus.REJECTED],
         ApplicationStatus.APPROVED: [ApplicationStatus.DISBURSED, ApplicationStatus.CANCELLED],
         ApplicationStatus.REJECTED: [],  # Terminal state
