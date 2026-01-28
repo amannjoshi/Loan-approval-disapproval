@@ -945,6 +945,13 @@ class DecisionEngine:
             # Generate recommendations for rejected applications
             recommendations = self._generate_rejection_recommendations(rule_result)
             
+            # Create friendly rejection message
+            primary_failure = rule_result.blocking_failures[0] if rule_result.blocking_failures else None
+            if primary_failure:
+                rejection_reason = self._get_friendly_rejection_reason(primary_failure)
+            else:
+                rejection_reason = "Application did not meet eligibility criteria"
+            
             return FinalDecision(
                 outcome=DecisionOutcome.REJECTED,
                 rules_passed=False,
@@ -958,7 +965,7 @@ class DecisionEngine:
                     model_version=self.ml_engine.MODEL_VERSION
                 ),
                 combined_score=0,
-                decision_reason="Application rejected due to failed eligibility rules",
+                decision_reason=f"❌ {rejection_reason}",
                 detailed_reasons=detailed_reasons,
                 recommendations=recommendations,
                 processing_time_ms=round(execution_time, 2),
@@ -991,13 +998,15 @@ class DecisionEngine:
             
         elif ml_result.approval_score >= self.REVIEW_THRESHOLD:
             outcome = DecisionOutcome.MANUAL_REVIEW
-            decision_reason = f"Manual review required (ML score: {ml_result.approval_score:.2%})"
+            decision_reason = f"⏳ Manual review required (Approval likelihood: {ml_result.approval_score:.0%})"
             review_reasons = self._generate_review_reasons(rule_result, ml_result)
             recommendations = self._generate_review_recommendations(applicant, loan)
             
         else:
             outcome = DecisionOutcome.REJECTED
-            decision_reason = f"Application rejected (ML score: {ml_result.approval_score:.2%})"
+            # Friendly rejection with specific reason
+            primary_risk = ml_result.risk_factors[0] if ml_result.risk_factors else "Multiple risk factors"
+            decision_reason = f"❌ Loan not approved: {primary_risk}. Improve and reapply in 3-6 months."
             recommendations = self._generate_rejection_recommendations(rule_result, ml_result)
         
         # Check for low confidence requiring review
@@ -1057,6 +1066,26 @@ class DecisionEngine:
             recommendations.append("💪 Remember: This is a temporary setback, not a permanent barrier!")
         
         return recommendations[:6]  # Max 6 recommendations
+    
+    def _get_friendly_rejection_reason(self, failure: RuleResult) -> str:
+        """Convert rule failure to friendly rejection message."""
+        friendly_reasons = {
+            "AGE_001": f"Age requirement not met ({failure.actual_value} years). Minimum age is {failure.threshold} years.",
+            "INC_001": f"Income (₹{failure.actual_value:,.0f}) below required ₹{failure.threshold:,.0f}/month for this loan type.",
+            "KYC_001": "KYC verification pending. Complete verification to proceed.",
+            "EMP_001": f"Employment duration ({failure.actual_value} months) below minimum {failure.threshold} months.",
+            "CIB_001": f"Credit score ({failure.actual_value}) below minimum {failure.threshold}. Improve score by timely EMI payments for 6 months.",
+            "DTI_001": f"Debt-to-income ratio ({failure.actual_value}%) exceeds {failure.threshold}% limit. Reduce existing EMIs first.",
+            "LOAN_001": f"Too many existing loans ({failure.actual_value}). Pay off some loans before applying.",
+            "LTI_001": "Loan amount too high relative to income. Consider a smaller loan.",
+            "COL_001": "Collateral requirements not met for this loan type.",
+            "ID_001": "Identity verification incomplete. Submit required documents."
+        }
+        
+        return friendly_reasons.get(
+            failure.rule_id, 
+            f"{failure.rule_name}: {failure.message}"
+        )
     
     def _generate_approval_recommendations(
         self,

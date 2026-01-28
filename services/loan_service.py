@@ -451,15 +451,18 @@ class LoanApplicationService:
         requires_manual = prediction.get('requires_manual_review', False)
         
         if prediction['approved']:
-            recommendations.append("✓ Your loan application has been approved!")
-            recommendations.append(f"✓ Risk assessment: {risk_level.title() if risk_level else 'Standard'}")
+            recommendations.append("✅ Congratulations! Your loan application has been approved!")
+            recommendations.append(f"📊 Risk assessment: {risk_level.title() if risk_level else 'Standard'}")
             
             if requires_manual:
-                recommendations.append("⚠ Final approval pending manual review")
-                recommendations.append("  A loan officer will contact you within 2-3 business days")
+                recommendations.append("⏳ Final approval pending manual review")
+                recommendations.append("📞 A loan officer will contact you within 2-3 business days")
         else:
-            recommendations.append("✗ Unfortunately, your application was not approved at this time")
-            recommendations.append("  Please review the factors below to understand the decision")
+            # SOFT REJECTION - Friendly, specific messaging
+            primary_issue = self._identify_primary_issue(explanation)
+            recommendations.append(f"❌ Loan not approved: {primary_issue['reason']}")
+            recommendations.append(f"💡 {primary_issue['suggestion']}")
+            recommendations.append("🔄 You can reapply after making the suggested improvements")
         
         # Generate improvement tips based on negative factors
         for factor in explanation.get('negative_factors', [])[:5]:
@@ -469,44 +472,114 @@ class LoanApplicationService:
             
             if 'cibil' in feature.lower():
                 improvement_tips.append(
-                    f"📊 Your credit score ({value}) is below optimal. "
-                    "Consider improving it by paying bills on time and reducing credit utilization."
+                    f"📈 Credit score ({value}) needs improvement → "
+                    "Pay all EMIs on time for 6 months to boost your score by 50-80 points"
                 )
             elif 'debt_to_income' in feature.lower() or 'emi_to_income' in feature.lower():
                 improvement_tips.append(
-                    f"💰 Your debt-to-income ratio ({value}) is high. "
-                    "Consider paying off existing debts before applying."
+                    f"💳 High debt-to-income ratio ({value}) → "
+                    "Pay off ₹20,000-30,000 of existing debt to improve eligibility"
                 )
             elif 'late_payments' in feature.lower():
                 improvement_tips.append(
-                    f"⏰ Late payment history ({value}) affects your score. "
-                    "Maintain timely payments for 6+ months to improve."
+                    f"⏰ Late payments ({value}) affecting score → "
+                    "Set up auto-pay and maintain 6 months of timely payments"
                 )
             elif 'loan_amount' in feature.lower() or 'loan_to_income' in feature.lower():
                 improvement_tips.append(
-                    f"📉 The requested loan amount relative to your income is high. "
-                    "Consider requesting a smaller loan amount."
+                    f"📉 Loan amount too high for income → "
+                    "Try applying for 20-30% lower amount or add a co-applicant"
                 )
             elif 'savings' in feature.lower():
                 improvement_tips.append(
-                    f"🏦 Your savings balance ({value}) is low. "
-                    "Building a larger emergency fund may improve your application."
+                    f"🏦 Low savings ({value}) → "
+                    "Build 3 months of EMI amount as savings before reapplying"
                 )
             elif 'employment' in feature.lower() or 'years_at' in feature.lower():
                 improvement_tips.append(
-                    f"💼 Employment stability affects lending decisions. "
-                    "Consider applying after longer tenure at your current job."
+                    f"💼 Short employment tenure → "
+                    "Wait 3-6 more months at current job before reapplying"
                 )
             elif 'defaults' in feature.lower():
                 improvement_tips.append(
-                    "⚠ Previous defaults significantly impact loan decisions. "
-                    "Time and consistent good credit behavior can help rebuild."
+                    "⚠️ Previous defaults on record → "
+                    "Clear outstanding dues and wait 12 months for score recovery"
                 )
         
         # Remove duplicates while preserving order
         improvement_tips = list(dict.fromkeys(improvement_tips))
         
         return recommendations, improvement_tips[:5]
+    
+    def _identify_primary_issue(self, explanation: Dict) -> Dict[str, str]:
+        """Identify the primary reason for rejection and provide specific suggestion."""
+        negative_factors = explanation.get('negative_factors', [])
+        
+        if not negative_factors:
+            return {
+                'reason': 'Multiple factors need improvement',
+                'suggestion': 'Review all areas and reapply in 3-6 months'
+            }
+        
+        # Get the most impactful negative factor
+        top_factor = negative_factors[0]
+        feature = top_factor.get('feature', '').lower()
+        value = top_factor.get('display_value', top_factor.get('value', ''))
+        
+        # Map features to friendly reasons and specific suggestions
+        issue_mapping = {
+            'cibil': {
+                'reason': f'Low credit score ({value})',
+                'suggestion': 'Pay all EMIs on time for 6 months to improve your score'
+            },
+            'credit_score': {
+                'reason': f'Credit score below threshold ({value})',
+                'suggestion': 'Improve score by timely EMI payments for 6 months'
+            },
+            'debt_to_income': {
+                'reason': f'High existing debt ({value})',
+                'suggestion': 'Reduce existing EMIs by ₹10,000-15,000/month before reapplying'
+            },
+            'emi_to_income': {
+                'reason': f'EMI burden too high ({value})',
+                'suggestion': 'Pay off one existing loan or increase income before reapplying'
+            },
+            'late_payment': {
+                'reason': f'Recent late payments ({value})',
+                'suggestion': 'Maintain 6 consecutive months of on-time payments'
+            },
+            'loan_amount': {
+                'reason': 'Loan amount too high for income',
+                'suggestion': 'Apply for a smaller amount or add a co-applicant with income'
+            },
+            'income': {
+                'reason': f'Income below requirement ({value})',
+                'suggestion': 'Document additional income sources or wait for salary increase'
+            },
+            'employment': {
+                'reason': f'Insufficient employment history ({value})',
+                'suggestion': 'Reapply after completing 6+ months at current job'
+            },
+            'savings': {
+                'reason': f'Low savings balance ({value})',
+                'suggestion': 'Build savings of at least 3x monthly EMI before reapplying'
+            },
+            'default': {
+                'reason': 'Previous loan default on record',
+                'suggestion': 'Clear dues and wait 12 months while maintaining good credit'
+            }
+        }
+        
+        # Find matching issue
+        for key, issue in issue_mapping.items():
+            if key in feature:
+                return issue
+        
+        # Default response
+        return {
+            'reason': f'{top_factor.get("display_name", "Financial factor")} needs improvement',
+            'suggestion': 'Address the highlighted concern and reapply in 3 months'
+        }
     
     def _calculate_interest_rate(self, risk_level: str) -> float:
         """Calculate suggested interest rate based on risk level."""
@@ -539,52 +612,81 @@ class LoanApplicationService:
     
     def get_decision_summary(self, result: DecisionResult) -> str:
         """Generate a human-readable summary of the decision."""
-        lines = [
-            "═" * 70,
-            f"  APPLICATION ID: {result.application_id[:8]}...",
-            f"  DECISION: {'APPROVED ✓' if result.approved else 'DENIED ✗'}",
-            f"  STATUS: {result.status.value.upper()}",
-            "═" * 70,
-            "",
-            f"  Approval Probability: {result.approval_probability:.1%}",
-            f"  Confidence Level: {result.confidence:.1%}",
-            f"  Risk Assessment: {(result.risk_level or 'unknown').upper()}",
-            ""
-        ]
+        lines = []
         
-        if result.approved and result.suggested_interest_rate:
+        if result.approved:
+            # APPROVED - Celebrate!
+            lines = [
+                "╔" + "═" * 68 + "╗",
+                "║" + " " * 20 + "🎉 LOAN APPROVED! 🎉" + " " * 20 + "║",
+                "╚" + "═" * 68 + "╝",
+                "",
+                f"  📋 Application ID: {result.application_id[:8]}...",
+                f"  ✅ Status: APPROVED",
+                f"  📊 Approval Confidence: {result.approval_probability:.0%}",
+                ""
+            ]
+            
+            if result.suggested_interest_rate:
+                lines.extend([
+                    "  💰 YOUR LOAN TERMS:",
+                    f"     • Interest Rate: {result.suggested_interest_rate}% p.a.",
+                    f"     • Monthly EMI: ₹{result.suggested_emi:,.0f}",
+                    ""
+                ])
+            
+            if result.positive_factors:
+                lines.append("  🌟 YOUR STRENGTHS:")
+                for f in result.positive_factors[:3]:
+                    name = f.get('display_name', f.get('feature', 'Factor'))
+                    lines.append(f"     ✓ {name}")
+                lines.append("")
+                
+        else:
+            # REJECTED - Soft, helpful messaging
+            lines = [
+                "╔" + "═" * 68 + "╗",
+                "║" + " " * 15 + "📋 APPLICATION STATUS UPDATE" + " " * 16 + "║",
+                "╚" + "═" * 68 + "╝",
+                "",
+                f"  📋 Application ID: {result.application_id[:8]}...",
+                ""
+            ]
+            
+            # Show the specific rejection reason and improvement
+            if result.recommendations:
+                for rec in result.recommendations[:3]:
+                    lines.append(f"  {rec}")
+                lines.append("")
+            
+            # Show improvement tips with clear actionable steps
+            if result.improvement_tips:
+                lines.append("  📈 HOW TO IMPROVE YOUR CHANCES:")
+                lines.append("  " + "─" * 40)
+                for i, tip in enumerate(result.improvement_tips[:3], 1):
+                    lines.append(f"  {i}. {tip}")
+                lines.append("")
+            
+            # Estimated timeline
             lines.extend([
-                "  LOAN TERMS:",
-                f"    Suggested Interest Rate: {result.suggested_interest_rate}% p.a.",
-                f"    Estimated EMI: ₹{result.suggested_emi:,.2f}",
+                "  ⏱️ RECOMMENDED TIMELINE:",
+                "     Reapply after addressing above improvements (typically 3-6 months)",
+                ""
+            ])
+            
+            # Encouragement
+            lines.extend([
+                "  💪 Remember: This is a temporary setback, not a permanent barrier!",
+                "     Many applicants succeed on their second attempt.",
                 ""
             ])
         
-        if result.positive_factors:
-            lines.append("  ✅ STRENGTHS:")
-            for f in result.positive_factors[:3]:
-                name = f.get('display_name', f.get('feature', 'Unknown'))
-                value = f.get('display_value', f.get('value', 'N/A'))
-                lines.append(f"    • {name}: {value}")
-            lines.append("")
-        
-        if result.negative_factors:
-            lines.append("  ⚠️ AREAS OF CONCERN:")
-            for f in result.negative_factors[:3]:
-                name = f.get('display_name', f.get('feature', 'Unknown'))
-                value = f.get('display_value', f.get('value', 'N/A'))
-                lines.append(f"    • {name}: {value}")
-            lines.append("")
-        
-        if result.improvement_tips:
-            lines.append("  💡 RECOMMENDATIONS:")
-            for tip in result.improvement_tips[:3]:
-                lines.append(f"    {tip}")
-            lines.append("")
-        
-        lines.append(f"  Processing Time: {result.processing_time_ms:.0f}ms")
-        lines.append(f"  Model ID: {result.model_id}")
-        lines.append("═" * 70)
+        # Footer
+        lines.extend([
+            "─" * 70,
+            f"  ⚙️ Processed in {result.processing_time_ms:.0f}ms | Model: {result.model_id[:12]}...",
+            "─" * 70
+        ])
         
         return "\n".join(lines)
 
