@@ -307,7 +307,7 @@ def setup_routes(app: FastAPI):
     
     # Import and include routers
     try:
-        from .routes import auth_router, applicants_router, applications_router, admin_router
+        from .routes import auth_router, applicants_router, applications_router, admin_router, models_router
         from .routes.health import router as health_router
         
         # Health routes (no prefix - available at /health, /ready, /metrics)
@@ -338,6 +338,12 @@ def setup_routes(app: FastAPI):
             admin_router,
             prefix=f"{settings.api_prefix}/admin",
             tags=["Admin"]
+        )
+        
+        app.include_router(
+            models_router,
+            prefix=f"{settings.api_prefix}/models",
+            tags=["Model Management"]
         )
         
     except ImportError as e:

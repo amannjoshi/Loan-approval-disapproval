@@ -8,10 +8,12 @@ from .auth import router as auth_router
 from .applicants import router as applicants_router
 from .applications import router as applications_router
 from .admin import router as admin_router
+from .models import router as models_router
 
 __all__ = [
     'auth_router',
     'applicants_router',
     'applications_router',
-    'admin_router'
+    'admin_router',
+    'models_router'
 ]

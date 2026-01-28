@@ -339,8 +339,27 @@ class ModelRegistry:
             self._save_metadata(metadata)
             logger.info(f"Archived model: {model_id}")
     
-    def rollback_production(self) -> Optional[str]:
-        """Rollback to previous production model."""
+    def rollback_production(self, to_model_id: Optional[str] = None) -> Optional[str]:
+        """
+        Rollback to a previous production model.
+        
+        Args:
+            to_model_id: Specific model to rollback to. If None, uses most recent archived.
+            
+        Returns:
+            Model ID that was rolled back to, or None if failed.
+        """
+        if to_model_id:
+            # Rollback to specific model
+            metadata = self._load_metadata(to_model_id)
+            if not metadata:
+                logger.error(f"Target model {to_model_id} not found")
+                return None
+            
+            self.promote_to_production(to_model_id, deployed_by="rollback")
+            logger.info(f"Rolled back to specified model: {to_model_id}")
+            return to_model_id
+        
         # Find most recent archived production model
         all_models = self.list_models(status=ModelStatus.ARCHIVED)
         if not all_models:

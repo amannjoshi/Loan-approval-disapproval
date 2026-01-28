@@ -55,6 +55,17 @@ from .application_service import (
     KYCRequiredError
 )
 
+from .rollback_service import (
+    ModelRollbackService,
+    DecisionHistoryStore,
+    RollbackReason,
+    RollbackStatus,
+    DecisionRecord,
+    RollbackRecord,
+    ReExplanationResult,
+    get_rollback_service
+)
+
 __all__ = [
     # Loan Service (Legacy)
     'LoanApplicationService',
@@ -92,5 +103,15 @@ __all__ = [
     'ApplicantNotFoundError',
     'AccessDeniedError',
     'InvalidStatusTransitionError',
-    'KYCRequiredError'
+    'KYCRequiredError',
+    
+    # Rollback Service
+    'ModelRollbackService',
+    'DecisionHistoryStore',
+    'RollbackReason',
+    'RollbackStatus',
+    'DecisionRecord',
+    'RollbackRecord',
+    'ReExplanationResult',
+    'get_rollback_service'
 ]
