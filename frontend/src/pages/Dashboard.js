@@ -14,8 +14,8 @@ import {
   Legend,
   Filler
 } from 'chart.js';
-// Note: loanService will be used when connecting to real backend
-// import { loanService } from '../services/api';
+import { loanService, adminService, healthService } from '../services/api';
+import { toast } from 'react-toastify';
 import './Dashboard.css';
 
 // Register ChartJS components
@@ -42,6 +42,7 @@ const Dashboard = () => {
   });
   const [recentApplications, setRecentApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [apiConnected, setApiConnected] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -50,65 +51,111 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      // In a real app, these would be actual API calls
-      // For demo, we'll use mock data
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      setStats({
-        totalApplications: 1247,
-        approved: 823,
-        rejected: 312,
-        pending: 112,
-        approvalRate: 72.5,
-        avgProcessingTime: 2.3
-      });
+      // Check API health first
+      try {
+        await healthService.check();
+        setApiConnected(true);
+      } catch (e) {
+        console.log('API health check failed, using demo data');
+        setApiConnected(false);
+      }
 
-      setRecentApplications([
-        {
-          id: 'LA-2024-001',
-          applicantName: 'Rahul Sharma',
-          amount: 500000,
-          status: 'approved',
-          date: '2024-01-26',
-          riskScore: 85
-        },
-        {
-          id: 'LA-2024-002',
-          applicantName: 'Priya Patel',
-          amount: 750000,
-          status: 'pending',
-          date: '2024-01-26',
-          riskScore: 72
-        },
-        {
-          id: 'LA-2024-003',
-          applicantName: 'Amit Kumar',
-          amount: 300000,
-          status: 'approved',
-          date: '2024-01-25',
-          riskScore: 91
-        },
-        {
-          id: 'LA-2024-004',
-          applicantName: 'Sneha Gupta',
-          amount: 1000000,
-          status: 'rejected',
-          date: '2024-01-25',
-          riskScore: 45
-        },
-        {
-          id: 'LA-2024-005',
-          applicantName: 'Vikram Singh',
-          amount: 450000,
-          status: 'approved',
-          date: '2024-01-24',
-          riskScore: 78
-        }
-      ]);
+      // Try to fetch real data from API
+      let dashboardData = null;
+      let applicationsData = null;
+
+      try {
+        const [dashboardRes, appsRes] = await Promise.all([
+          adminService.getDashboard(),
+          loanService.getAll({ limit: 5 })
+        ]);
+        dashboardData = dashboardRes.data;
+        applicationsData = appsRes.data;
+      } catch (apiError) {
+        console.log('API call failed, using demo data:', apiError.message);
+      }
+
+      if (dashboardData) {
+        // Use real data from API
+        setStats({
+          totalApplications: dashboardData.total_applications || dashboardData.totalApplications || 0,
+          approved: dashboardData.approved || dashboardData.approved_count || 0,
+          rejected: dashboardData.rejected || dashboardData.rejected_count || 0,
+          pending: dashboardData.pending || dashboardData.pending_count || 0,
+          approvalRate: dashboardData.approval_rate || dashboardData.approvalRate || 0,
+          avgProcessingTime: dashboardData.avg_processing_time || dashboardData.avgProcessingTime || 0
+        });
+      } else {
+        // Use demo data
+        setStats({
+          totalApplications: 1247,
+          approved: 823,
+          rejected: 312,
+          pending: 112,
+          approvalRate: 72.5,
+          avgProcessingTime: 2.3
+        });
+      }
+
+      if (applicationsData?.items || applicationsData?.applications) {
+        const apps = applicationsData.items || applicationsData.applications || [];
+        setRecentApplications(apps.map(app => ({
+          id: app.application_number || app.id,
+          applicantName: app.applicant_name || app.applicantName || 'Unknown',
+          amount: app.loan_amount || app.amount || 0,
+          status: app.status?.toLowerCase() || 'pending',
+          date: app.created_at || app.submitted_at || new Date().toISOString(),
+          riskScore: Math.round((app.ml_approval_probability || app.riskScore || 0.5) * 100)
+        })));
+      } else {
+        // Demo data for recent applications
+        setRecentApplications([
+          {
+            id: 'LA-2026-001',
+            applicantName: 'Rahul Sharma',
+            amount: 500000,
+            status: 'approved',
+            date: '2026-01-29',
+            riskScore: 85
+          },
+          {
+            id: 'LA-2026-002',
+            applicantName: 'Priya Patel',
+            amount: 750000,
+            status: 'pending',
+            date: '2026-01-29',
+            riskScore: 72
+          },
+          {
+            id: 'LA-2026-003',
+            applicantName: 'Amit Kumar',
+            amount: 300000,
+            status: 'approved',
+            date: '2026-01-28',
+            riskScore: 91
+          },
+          {
+            id: 'LA-2026-004',
+            applicantName: 'Sneha Gupta',
+            amount: 1000000,
+            status: 'rejected',
+            date: '2026-01-28',
+            riskScore: 45
+          },
+          {
+            id: 'LA-2026-005',
+            applicantName: 'Vikram Singh',
+            amount: 450000,
+            status: 'approved',
+            date: '2026-01-27',
+            riskScore: 78
+          }
+        ]);
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
@@ -225,6 +272,12 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard">
+      {/* API Connection Status */}
+      <div className={`api-status ${apiConnected ? 'connected' : 'disconnected'}`}>
+        <span className="status-dot"></span>
+        {apiConnected ? 'Connected to API' : 'Demo Mode (API Offline)'}
+      </div>
+
       {/* Page Header */}
       <div className="page-header">
         <div>

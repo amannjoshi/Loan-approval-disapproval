@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiAlertCircle, FiUser, FiPhone } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
-import { toast } from 'react-toastify';
 import './Auth.css';
 
 const Register = () => {
@@ -78,11 +77,24 @@ const Register = () => {
 
     setLoading(true);
     try {
-      await register(formData);
-      toast.success('Account created successfully!');
-      navigate('/dashboard');
+      // Split full name into first and last name
+      const nameParts = formData.fullName.trim().split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ') || nameParts[0];
+
+      const result = await register({
+        email: formData.email,
+        password: formData.password,
+        firstName: firstName,
+        lastName: lastName,
+        phone: formData.phone
+      });
+      
+      if (result.success) {
+        navigate('/login');
+      }
     } catch (error) {
-      toast.error(error.message || 'Registration failed. Please try again.');
+      console.error('Registration error:', error);
     } finally {
       setLoading(false);
     }

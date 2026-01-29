@@ -8,6 +8,45 @@
 }
 
 /* ========================================
+   API Connection Status
+   ======================================== */
+.privacy-demo .api-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: var(--spacing-md);
+}
+
+.privacy-demo .api-status.connected {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.privacy-demo .api-status.disconnected {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+.privacy-demo .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.privacy-demo .api-status.connected .status-dot {
+  background: #10b981;
+}
+
+.privacy-demo .api-status.disconnected .status-dot {
+  background: #f59e0b;
+}
+
+/* ========================================
    Header
    ======================================== */
 .privacy-header {

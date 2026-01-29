@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FiShield, FiEye, FiEyeOff, FiCreditCard, FiUser, FiPhone, 
   FiMail, FiLock, FiCheck, FiAlertCircle, FiRefreshCw
 } from 'react-icons/fi';
-// Note: privacyService will be used when connecting to real backend
-// import { privacyService } from '../services/api';
+import { privacyService, healthService } from '../services/api';
 import { toast } from 'react-toastify';
 import './PrivacyDemo.css';
 
 const PrivacyDemo = () => {
   const [showOriginal, setShowOriginal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [apiConnected, setApiConnected] = useState(false);
   const [customData, setCustomData] = useState({
     pan: '',
     aadhaar: '',
@@ -18,6 +18,20 @@ const PrivacyDemo = () => {
     email: ''
   });
   const [maskedResult, setMaskedResult] = useState(null);
+
+  // Check API connection on mount
+  useEffect(() => {
+    checkApiConnection();
+  }, []);
+
+  const checkApiConnection = async () => {
+    try {
+      await healthService.check();
+      setApiConnected(true);
+    } catch (e) {
+      setApiConnected(false);
+    }
+  };
 
   // Demo data examples
   const demoData = {
@@ -61,24 +75,64 @@ const PrivacyDemo = () => {
 
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
+      let result = {};
 
-      // Mock masking logic (in real app, call privacyService.maskData)
-      const result = {
-        pan: customData.pan ? 
-          customData.pan.slice(0, 4) + '****' + customData.pan.slice(-1) : null,
-        aadhaar: customData.aadhaar ? 
-          '********' + customData.aadhaar.slice(-4) : null,
-        phone: customData.phone ? 
-          customData.phone.slice(0, 3) + ' ****' + customData.phone.slice(-5) : null,
-        email: customData.email ? 
-          customData.email[0] + '****@' + customData.email.split('@')[1] : null
-      };
+      if (apiConnected) {
+        // Call real API for masking
+        const promises = [];
+        
+        if (customData.pan) {
+          promises.push(
+            privacyService.maskPan(customData.pan)
+              .then(res => ({ pan: res.data.masked || res.data.masked_value }))
+              .catch(() => ({ pan: customData.pan.slice(0, 4) + '****' + customData.pan.slice(-1) }))
+          );
+        }
+        
+        if (customData.aadhaar) {
+          promises.push(
+            privacyService.maskAadhaar(customData.aadhaar)
+              .then(res => ({ aadhaar: res.data.masked || res.data.masked_value }))
+              .catch(() => ({ aadhaar: '********' + customData.aadhaar.slice(-4) }))
+          );
+        }
+        
+        if (customData.phone) {
+          promises.push(
+            privacyService.maskPhone(customData.phone)
+              .then(res => ({ phone: res.data.masked || res.data.masked_value }))
+              .catch(() => ({ phone: customData.phone.slice(0, 3) + ' ****' + customData.phone.slice(-5) }))
+          );
+        }
+        
+        if (customData.email) {
+          promises.push(
+            privacyService.maskEmail(customData.email)
+              .then(res => ({ email: res.data.masked || res.data.masked_value }))
+              .catch(() => ({ email: customData.email[0] + '****@' + customData.email.split('@')[1] }))
+          );
+        }
+
+        const results = await Promise.all(promises);
+        result = results.reduce((acc, r) => ({ ...acc, ...r }), {});
+      } else {
+        // Fallback to local masking
+        result = {
+          pan: customData.pan ? 
+            customData.pan.slice(0, 4) + '****' + customData.pan.slice(-1) : null,
+          aadhaar: customData.aadhaar ? 
+            '********' + customData.aadhaar.slice(-4) : null,
+          phone: customData.phone ? 
+            customData.phone.slice(0, 3) + ' ****' + customData.phone.slice(-5) : null,
+          email: customData.email ? 
+            customData.email[0] + '****@' + customData.email.split('@')[1] : null
+        };
+      }
 
       setMaskedResult(result);
-      toast.success('Data masked successfully!');
+      toast.success(apiConnected ? 'Data masked via API!' : 'Data masked locally (demo mode)');
     } catch (error) {
+      console.error('Masking error:', error);
       toast.error('Failed to mask data. Please try again.');
     } finally {
       setLoading(false);
@@ -92,6 +146,12 @@ const PrivacyDemo = () => {
 
   return (
     <div className="privacy-demo">
+      {/* API Status */}
+      <div className={`api-status ${apiConnected ? 'connected' : 'disconnected'}`}>
+        <span className="status-dot"></span>
+        {apiConnected ? 'Connected to Privacy API' : 'Demo Mode (Local Masking)'}
+      </div>
+
       {/* Header */}
       <div className="privacy-header">
         <div className="privacy-icon">

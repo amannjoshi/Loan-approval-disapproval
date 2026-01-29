@@ -1,16 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiUser, FiDollarSign, FiBriefcase, FiFileText, FiCheck, FiChevronRight, FiChevronLeft, FiAlertCircle } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-// Note: loanService will be used when connecting to real backend
-// import { loanService } from '../services/api';
+import { loanService, applicantService, healthService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import './LoanApplication.css';
 
 const LoanApplication = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [apiConnected, setApiConnected] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // Check API connection
+  useEffect(() => {
+    const checkApi = async () => {
+      try {
+        await healthService.check();
+        setApiConnected(true);
+      } catch (e) {
+        setApiConnected(false);
+      }
+    };
+    checkApi();
+  }, []);
 
   const [formData, setFormData] = useState({
     // Personal Information
@@ -150,19 +165,65 @@ const LoanApplication = () => {
 
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // In real app, call: await loanService.createApplication(formData);
-      
-      toast.success('Application submitted successfully!', {
-        position: 'top-right',
-        autoClose: 3000
-      });
+      let applicationId = 'LA-' + Date.now();
 
-      navigate('/status', { state: { applicationId: 'LA-2024-NEW' } });
+      if (apiConnected && isAuthenticated) {
+        // First, create or update applicant profile
+        try {
+          const applicantData = {
+            full_name: formData.fullName,
+            email: formData.email,
+            phone: formData.phone,
+            date_of_birth: formData.dateOfBirth,
+            pan_number: formData.panNumber.toUpperCase(),
+            aadhaar_number: formData.aadhaarNumber,
+            address_line1: formData.address,
+            city: formData.city,
+            state: formData.state,
+            pincode: formData.pincode,
+            employment_type: formData.employmentType,
+            employer_name: formData.companyName,
+            job_title: formData.designation,
+            years_employed: parseInt(formData.workExperience) || 0,
+            monthly_income: parseFloat(formData.monthlyIncome) || 0,
+          };
+
+          await applicantService.create(applicantData);
+        } catch (applicantError) {
+          console.log('Applicant creation error (may already exist):', applicantError.message);
+        }
+
+        // Then create the loan application
+        const applicationData = {
+          loan_type: formData.loanPurpose,
+          loan_amount: parseFloat(formData.loanAmount),
+          loan_term_months: parseInt(formData.loanTenure),
+          purpose: formData.loanPurpose,
+          purpose_description: `${formData.loanPurpose} loan application`,
+          existing_emi: formData.existingLoans === 'yes' ? parseFloat(formData.existingEMI) || 0 : 0,
+        };
+
+        const response = await loanService.create(applicationData);
+        applicationId = response.data.application_number || response.data.id;
+        
+        toast.success(`Application ${applicationId} submitted successfully!`, {
+          position: 'top-right',
+          autoClose: 3000
+        });
+      } else {
+        // Demo mode
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        toast.success('Application submitted (Demo Mode)!', {
+          position: 'top-right',
+          autoClose: 3000
+        });
+      }
+
+      navigate('/status', { state: { applicationId } });
     } catch (error) {
-      toast.error('Failed to submit application. Please try again.', {
+      console.error('Submit error:', error);
+      const message = error.response?.data?.detail || 'Failed to submit application. Please try again.';
+      toast.error(message, {
         position: 'top-right'
       });
     } finally {

@@ -46,11 +46,12 @@ const Login = () => {
 
     setLoading(true);
     try {
-      await login(formData.email, formData.password);
-      toast.success('Welcome back!');
-      navigate('/dashboard');
+      const result = await login(formData.email, formData.password);
+      if (result.success) {
+        navigate('/dashboard');
+      }
     } catch (error) {
-      toast.error(error.message || 'Login failed. Please try again.');
+      console.error('Login error:', error);
     } finally {
       setLoading(false);
     }
@@ -59,8 +60,7 @@ const Login = () => {
   const handleDemoLogin = async () => {
     setLoading(true);
     try {
-      await demoLogin();
-      toast.success('Logged in with demo account!');
+      demoLogin();
       navigate('/dashboard');
     } catch (error) {
       toast.error('Demo login failed. Please try again.');
